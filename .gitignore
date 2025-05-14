@@ -38,3 +38,6 @@ lerna-debug.log*
 
 # env
 *.env*
+
+# lambda.zip
+lambda.zip
