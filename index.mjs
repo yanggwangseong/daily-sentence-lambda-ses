@@ -101,27 +101,28 @@ async function sendTestEmail(emailList, sentences, periodTitle, periodRange) {
   }
 }
 
-async function dbOps() {
-  const connectionConfig = {
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT, 10),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-  };
+export const connectionConfig = {
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT, 10),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+};
 
+export async function dbOps() {
   const conn = await mysql.createConnection(connectionConfig);
   const [res] = await conn.execute("SELECT email FROM subscribers;");
-  const sentences = await getWeeklySentences();
+  const { startDateStr, endDateStr } = await getCalculatedDate();
+  const sentences = await getWeeklySentences(startDateStr, endDateStr);
   return {
     emailList: res.map((row) => row.email),
     sentences: sentences,
-    startDate: new Date(sentences[0].date),
-    endDate: new Date(sentences[sentences.length - 1].date),
+    startDate: startDateStr,
+    endDate: endDateStr,
   };
 }
 
-async function getWeeklySentences() {
+export async function getCalculatedDate() {
   // 배치 스케줄러가 시작되는 날은 매주 월요일 오전 8시
   const inputDate = new Date();
 
@@ -144,6 +145,10 @@ async function getWeeklySentences() {
     timeZone: "Asia/Seoul",
   });
 
+  return { startDateStr, endDateStr };
+}
+
+export async function getWeeklySentences(startDateStr, endDateStr) {
   const conn = await mysql.createConnection(connectionConfig);
 
   const [res] = await conn.execute(
@@ -164,7 +169,7 @@ async function getWeeklySentences() {
   }));
 }
 
-function getKoreanWeekInfo(startDate, endDate) {
+export function getKoreanWeekInfo(startDate, endDate) {
   // 몇월
   const month = startDate.getMonth() + 1;
   // 몇주차 계산
