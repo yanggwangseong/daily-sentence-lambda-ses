@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/yanggwangseong/daily-sentence-lambda-ses#readme",
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.808.0",
     "mysql2": "^3.14.1"
   }
 }
