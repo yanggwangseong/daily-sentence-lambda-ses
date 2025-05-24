@@ -3,6 +3,72 @@ import mysql from "mysql2/promise";
 
 jest.mock("mysql2/promise");
 
+const mockSentences = [
+  {
+    sentence_id: 1,
+    sentence_sentence: "Test sentence",
+    sentence_meaning: "테스트 문장",
+    sentence_createdAt: "2025-05-12T00:00:00.000Z",
+    vocab_word: "test",
+    vocab_definition: "테스트",
+    video_videoUrl: "https://example.com/video",
+  },
+  {
+    sentence_id: 2,
+    sentence_sentence: "Test sentence",
+    sentence_meaning: "테스트 문장",
+    sentence_createdAt: "2025-05-13T00:00:00.000Z",
+    vocab_word: "test",
+    vocab_definition: "테스트",
+    video_videoUrl: "https://example.com/video",
+  },
+  {
+    sentence_id: 3,
+    sentence_sentence: "Test sentence",
+    sentence_meaning: "테스트 문장",
+    sentence_createdAt: "2025-05-14T00:00:00.000Z",
+    vocab_word: "test",
+    vocab_definition: "테스트",
+    video_videoUrl: "https://example.com/video",
+  },
+  {
+    sentence_id: 4,
+    sentence_sentence: "Test sentence",
+    sentence_meaning: "테스트 문장",
+    sentence_createdAt: "2025-05-15T00:00:00.000Z",
+    vocab_word: "test",
+    vocab_definition: "테스트",
+    video_videoUrl: "https://example.com/video",
+  },
+  {
+    sentence_id: 5,
+    sentence_sentence: "Test sentence",
+    sentence_meaning: "테스트 문장",
+    sentence_createdAt: "2025-05-16T00:00:00.000Z",
+    vocab_word: "test",
+    vocab_definition: "테스트",
+    video_videoUrl: "https://example.com/video",
+  },
+  {
+    sentence_id: 6,
+    sentence_sentence: "Test sentence",
+    sentence_meaning: "테스트 문장",
+    sentence_createdAt: "2025-05-17T00:00:00.000Z",
+    vocab_word: "test",
+    vocab_definition: "테스트",
+    video_videoUrl: "https://example.com/video",
+  },
+  {
+    sentence_id: 7,
+    sentence_sentence: "Test sentence",
+    sentence_meaning: "테스트 문장",
+    sentence_createdAt: "2025-05-18T00:00:00.000Z",
+    vocab_word: "test",
+    vocab_definition: "테스트",
+    video_videoUrl: "https://example.com/video",
+  },
+];
+
 describe("getWeekDates", () => {
   it("should return correct week dates for a Monday", () => {
     const monday = new Date("2025-05-12"); // 2025년 5월 12일 (월요일)
@@ -35,18 +101,6 @@ describe("getSentencesForWeek", () => {
   });
 
   it("should fetch sentences and emails from database", async () => {
-    const mockSentences = [
-      {
-        sentence_id: 1,
-        sentence_sentence: "Test sentence",
-        sentence_meaning: "테스트 문장",
-        sentence_createdAt: "2025-05-12T00:00:00.000Z",
-        vocab_word: "test",
-        vocab_definition: "테스트",
-        video_videoUrl: "https://example.com/video",
-      },
-    ];
-
     const mockEmails = [
       { email: "test1@example.com" },
       { email: "test2@example.com" },
@@ -85,22 +139,11 @@ describe("getSentencesForWeek", () => {
 
 describe("generateEmailTemplate", () => {
   it("should generate correct HTML template with all elements", () => {
-    const sentences = [
-      {
-        sentence_createdAt: "2025-05-12T00:00:00.000Z",
-        sentence_sentence: "Test sentence",
-        sentence_meaning: "테스트 문장",
-        vocab_word: "test",
-        vocab_definition: "테스트",
-        video_videoUrl: "https://example.com/video",
-      },
-    ];
-
     const startDate = "2025-05-12";
     const endDate = "2025-05-18";
 
     const template = indexModule.generateEmailTemplate(
-      sentences,
+      mockSentences,
       startDate,
       endDate
     );
