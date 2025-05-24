@@ -1,131 +1,120 @@
 import mysql from "mysql2/promise";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
-const sesClient = new SESClient({ region: process.env.AWS_REGION });
+const sesClient = new SESClient({
+  region: process.env.AWS_REGION,
+});
 
-function makeNewsletterHTML(sentences, periodTitle, periodRange) {
+export const generateEmailTemplate = (sentences, startDate, endDate) => {
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+    const weekday = weekdays[date.getDay()];
+    return `${year}. ${month}. ${day}. (${weekday})`;
+  };
+
+  const formatPeriod = (start, end) => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    return `${startDate.getFullYear()}. ${String(
+      startDate.getMonth() + 1
+    ).padStart(2, "0")}. ${String(startDate.getDate()).padStart(
+      2,
+      "0"
+    )}. ~ ${endDate.getFullYear()}. ${String(endDate.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}. ${String(endDate.getDate()).padStart(2, "0")}.`;
+  };
+
+  const sentenceItems = sentences
+    .map((sentence) => {
+      const date = formatDate(sentence.sentence_createdAt);
+      const vocabDefinition = sentence.vocab_definition
+        ? `<span style="font-size: 14px; color: #555;">${sentence.vocab_word}: ${sentence.vocab_definition}</span><br />`
+        : "";
+
+      return `
+<span style="font-size: 14px; font-weight: 400; line-height: 3; color: #222;">
+  <span style="font-size: 16px; font-weight: 600">📅 ${date}</span><br />
+  <span style="font-size: 15px; color: #333;">"${
+    sentence.sentence_sentence
+  }" : ${sentence.sentence_meaning}</span><br />
+  ${vocabDefinition}
+  ${
+    sentence.video_videoUrl
+      ? `📺 <a href="${sentence.video_videoUrl}" target="_blank" style="color: #4b6bfb; text-decoration: none; font-size: 14px; font-weight: 500;">관련 영상 보기</a>`
+      : ""
+  }
+</span>
+
+<hr style="margin: 20px 0; border-color: #d9d9d9; border-style: solid; border-width: 1px 0 0 0;" />
+`;
+    })
+    .join("");
+
   return `
-  <html>
+<html>
   <head>
     <meta charset="UTF-8" />
-    <style>
-      body { font-family: 'Apple SD Gothic Neo', Arial, sans-serif; background: #fafbfc; margin: 0; padding: 0; }
-      .container { max-width: 600px; margin: 30px auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #eee; padding: 32px 24px; }
-      .header { text-align: center; margin-bottom: 32px; }
-      .header h2 { margin: 0; font-size: 1.6em; }
-      .header .period { color: #888; font-size: 1em; margin-top: 4px; }
-      .sentence-block { border-bottom: 1px solid #f0f0f0; padding: 24px 0; }
-      .sentence-block:last-child { border-bottom: none; }
-      .date { color: #888; font-size: 1em; margin-bottom: 8px; }
-      .main-sentence { font-size: 1.2em; font-weight: bold; margin-bottom: 6px; }
-      .meaning { color: #333; margin-bottom: 6px; }
-      .vocab { color: #555; font-size: 0.98em; margin-bottom: 6px; }
-      .video-link { display: inline-block; margin-top: 6px; color: #2d6cdf; text-decoration: none; font-size: 0.98em; }
-      @media (max-width: 650px) {
-        .container { padding: 12px 4px; }
-      }
-    </style>
   </head>
   <body>
-    <div class="container">
-      <div class="header">
-        <h2>${periodTitle}</h2>
-        <div class="period">${periodRange}</div>
-      </div>
-      ${sentences
-        .map(
-          (s) => `
-        <div class="sentence-block">
-          <div class="date">${s.date}</div>
-          <div class="main-sentence">"${s.sentence}"</div>
-          <div class="meaning">${s.meaning}</div>
-          ${
-            s.vocab && s.vocab.length
-              ? `
-            <div class="vocab">
-              ${s.vocab
-                .map((v) => `<span>${v.word}: ${v.definition}</span><br>`)
-                .join("")}
-            </div>
-          `
-              : ""
-          }
-          ${
-            s.videoUrl
-              ? `<a class="video-link" href="${s.videoUrl}" target="_blank">관련 영상 보기</a>`
-              : ""
-          }
-        </div>
-      `
-        )
-        .join("")}
+    <div>
+      <xlink rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.6/dist/web/variable/pretendardvariable.css">
+      <table style="margin: 40px auto 20px; text-align: left; border-collapse: collapse; border: 0; width: 600px; padding: 64px 16px; box-sizing: border-box;">
+        <tbody>
+          <tr>
+            <td>
+              <a href="https://www.daily-sentence.co.kr" target="_blank" style="display: inline-block; font-size: 22px; font-weight: 600; color: #333; text-decoration: none;" rel="noreferrer noopener">
+                매일영어
+              </a>
+
+              <p style="padding-top: 48px; font-weight: 700; font-size: 20px; line-height: 1.5; color: #222;">
+                ${new Date(startDate).getMonth() + 1}월 ${Math.ceil(
+    new Date(startDate).getDate() / 7
+  )}주차 주간 영어 문장
+              </p>
+              <p style="font-size: 16px; font-weight: 400; line-height: 2; padding-top: 16px; color: #666;">
+                ${formatPeriod(startDate, endDate)}<br/>
+                🚀 매일 한 문장씩, 영어 실력이 쌓이는 Daily Sentence 안녕하세요! 바쁜 일상 속에서도<br/>
+                꾸준히 영어 공부할 수 있는 Daily Sentence 서비스를 구독 해주셔서 감사합니다.<br/>
+                ✈️ <a href="https://www.daily-sentence.co.kr" target="_blank" style="color: #4b6bfb; text-decoration: none; font-size: 14px; font-weight: 500;">사이트 바로 가기</a>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-top: 48px" colspan="2">
+              <div style="padding: 24px; background: #f2f2f2; border-radius: 8px">
+                ${sentenceItems}
+              </div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td style="padding-top: 48px">
+              <hr style="margin: 8px 0; border-color: #d9d9d9; border-style: solid; border-width: 1px 0 0 0;" />
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-top: 8px; font-size: 12px; font-style: normal; font-weight: 400; line-height: 1.5; color: #222;">
+              <p style="font-size: 14px; font-weight: 700">매일 영어</p>
+              <p>이메일: dailysentence6@gmail.com</p>
+              <a href="https://docs.google.com/forms/d/e/1FAIpQLSeacEjmcxGbEp9ZMQHUONgEj9scaJTLbEk0mREkbtS8x9WTtQ/viewform" target="_blank" style="color: #4b6bfb; text-decoration: none; font-size: 14px; font-weight: 500;">기능개선 및 버그 제보</a>
+              <p>Copyright © ${new Date().getFullYear()}, 매일영어. All rights reserved.</p>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   </body>
-  </html>
-  `;
-}
-
-async function sendTestEmail(emailList, sentences, periodTitle, periodRange) {
-  const htmlBody = makeNewsletterHTML(sentences, periodTitle, periodRange);
-
-  const params = {
-    Source: process.env.SENDER_EMAIL,
-    Destination: {
-      ToAddresses: emailList,
-    },
-    Message: {
-      Subject: {
-        Data: periodTitle,
-        Charset: "UTF-8",
-      },
-      Body: {
-        Html: {
-          Data: htmlBody,
-          Charset: "UTF-8",
-        },
-        Text: {
-          Data: "내용이 보이지 않을 경우 https://www.daily-sentence.co.kr/weekly에서 확인 할 수 있습니다.",
-          Charset: "UTF-8",
-        },
-      },
-    },
-  };
-
-  try {
-    const command = new SendEmailCommand(params);
-    const result = await sesClient.send(command);
-    return result;
-  } catch (error) {
-    console.error("Error sending email:", error);
-    throw error;
-  }
-}
-
-export const connectionConfig = {
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT, 10),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+</html>`;
 };
 
-export async function dbOps() {
-  const conn = await mysql.createConnection(connectionConfig);
-  const [res] = await conn.execute("SELECT email FROM subscribers;");
-  const { startDateStr, endDateStr } = await getCalculatedDate();
-  const sentences = await getWeeklySentences(startDateStr, endDateStr);
-  return {
-    emailList: res.map((row) => row.email),
-    sentences: sentences,
-    startDate: startDateStr,
-    endDate: endDateStr,
-  };
-}
-
-export async function getCalculatedDate() {
-  // 배치 스케줄러가 시작되는 날은 매주 월요일 오전 8시
-  const inputDate = new Date();
-
+export const getWeekDates = (inputDate) => {
   // 월요일을 주의 시작으로 계산 (1: 월요일, ..., 0: 일요일)
   const day = inputDate.getDay();
   const diff = day === 0 ? 6 : day - 1; // 일요일(0)이면 6을 빼고, 아니면 요일-1을 빼서 월요일로 맞춤
@@ -145,95 +134,119 @@ export async function getCalculatedDate() {
     timeZone: "Asia/Seoul",
   });
 
-  return { startDateStr, endDateStr };
-}
-
-export async function getWeeklySentences(startDateStr, endDateStr) {
-  const conn = await mysql.createConnection(connectionConfig);
-
-  const [res] = await conn.execute(
-    "SELECT `sentence`.`id` AS `sentence_id`, `sentence`.`sentence` AS `sentence_sentence`, `sentence`.`meaning` AS `sentence_meaning`, `sentence`.`createdAt` AS `sentence_createdAt`, `sentence`.`updatedAt` AS `sentence_updatedAt`, `sentence`.`videoId` AS `sentence_videoId`, `vocab`.`id` AS `vocab_id`, `vocab`.`word` AS `vocab_word`, `vocab`.`definition` AS `vocab_definition`, `vocab`.`createdAt` AS `vocab_createdAt`, `vocab`.`updatedAt` AS `vocab_updatedAt`, `vocab`.`sentenceId` AS `vocab_sentenceId`, `video`.`id` AS `video_id`, `video`.`videoUrl` AS `video_videoUrl`, `video`.`createdAt` AS `video_createdAt`, `video`.`updatedAt` AS `video_updatedAt` FROM `sentences` `sentence` LEFT JOIN `vocabs` `vocab` ON `vocab`.`sentenceId`=`sentence`.`id` LEFT JOIN `videos` `video` ON `video`.`id`=`sentence`.`videoId` WHERE DATE(`sentence`.`createdAt`) BETWEEN ? AND ?",
-    [startDateStr, endDateStr]
-  );
-  return res.map((sentence) => ({
-    date: new Date(sentence.createdAt).toLocaleDateString("sv-SE", {
-      timeZone: "Asia/Seoul",
-    }),
-    sentence: sentence.sentence,
-    meaning: sentence.meaning,
-    vocab: sentence.vocabs.map((v) => ({
-      word: v.word,
-      definition: v.definition,
-    })),
-    videoUrl: sentence.video?.videoUrl ?? "",
-  }));
-}
-
-export function getKoreanWeekInfo(startDate, endDate) {
-  // 몇월
-  const month = startDate.getMonth() + 1;
-  // 몇주차 계산
-  const firstDayOfMonth = new Date(
-    startDate.getFullYear(),
-    startDate.getMonth(),
-    1
-  );
-  const firstDayWeekDay =
-    firstDayOfMonth.getDay() === 0 ? 7 : firstDayOfMonth.getDay(); // 일요일=7
-  const offset = firstDayWeekDay === 1 ? 0 : 8 - firstDayWeekDay; // 첫 주의 월요일까지 며칠
-  const firstMonday = new Date(firstDayOfMonth);
-  firstMonday.setDate(firstDayOfMonth.getDate() + offset);
-
-  let week = 1;
-  let tempMonday = new Date(firstMonday);
-  while (tempMonday < startDate) {
-    tempMonday.setDate(tempMonday.getDate() + 7);
-    week++;
-  }
-
-  // 기간 문자열
-  const startStr = `${startDate.getFullYear()}. ${String(
-    startDate.getMonth() + 1
-  ).padStart(2, "0")}. ${String(startDate.getDate()).padStart(2, "0")}.`;
-  const endStr = `${endDate.getFullYear()}. ${String(
-    endDate.getMonth() + 1
-  ).padStart(2, "0")}. ${String(endDate.getDate()).padStart(2, "0")}.`;
-
   return {
-    periodTitle: `${month}월 ${week}주차<br>주간 영어 문장`,
-    periodRange: `${startStr} ~ ${endStr}`,
+    startDate: startDateStr,
+    endDate: endDateStr,
   };
-}
+};
 
-export const handler = async (event) => {
+export const connectionConfig = {
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT, 10),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+};
+
+export const getSentencesForWeek = async (startDate, endDate) => {
+  const connection = await mysql.createConnection(connectionConfig);
+
   try {
-    // db에서 이메일 리스트 가져오기
-    const dbResult = await dbOps();
-
-    // 이메일 주소만 추출하여 배열로 변환
-    const { emailList, sentences, startDate, endDate } = dbResult;
-    // 주간 문장 가져오기
-    const { periodTitle, periodRange } = getKoreanWeekInfo(startDate, endDate);
-    const emailResult = await sendTestEmail(
-      emailList,
-      sentences,
-      periodTitle,
-      periodRange
+    const [rows] = await connection.execute(
+      `
+      SELECT 
+        sentence.id AS sentence_id,
+        sentence.sentence AS sentence_sentence,
+        sentence.meaning AS sentence_meaning,
+        sentence.createdat AS sentence_createdAt,
+        sentence.updatedat AS sentence_updatedAt,
+        vocab.id AS vocab_id,
+        vocab.word AS vocab_word,
+        vocab.definition AS vocab_definition,
+        vocab.createdat AS vocab_createdAt,
+        vocab.updatedat AS vocab_updatedAt,
+        vocab.sentenceid AS vocab_sentenceId,
+        video.id AS video_id,
+        video.videourl AS video_videoUrl,
+        video.createdat AS video_createdAt,
+        video.updatedat AS video_updatedAt
+      FROM sentences sentence
+      LEFT JOIN vocabs vocab ON vocab.sentenceid = sentence.id
+      LEFT JOIN videos video ON video.id = sentence.videoid
+      WHERE Date(sentence.createdat) BETWEEN ? AND ?
+    `,
+      [startDate, endDate]
+    );
+    const [emails] = await connection.execute(
+      `
+      SELECT 
+        email
+      FROM subscribers;
+    `
     );
 
-    const response = {
+    return {
+      sentences: rows,
+      emails,
+    };
+  } catch (error) {
+    console.error("Database error:", error);
+    throw error;
+  } finally {
+    await connection.end();
+  }
+};
+
+export const handler = async () => {
+  try {
+    const { startDate, endDate } = getWeekDates(new Date());
+    const { sentences, emails } = await getSentencesForWeek(startDate, endDate);
+
+    const emailTemplate = generateEmailTemplate(sentences, startDate, endDate);
+
+    const emailCommand = new SendEmailCommand({
+      Destination: {
+        CcAddresses: [],
+        BccAddresses: [],
+        ToAddresses: emails.map((email) => email.email),
+      },
+      Message: {
+        Body: {
+          Html: {
+            Charset: "UTF-8",
+            Data: emailTemplate,
+          },
+        },
+        Subject: {
+          Charset: "UTF-8",
+          Data: `${new Date(startDate).getMonth() + 1}월 ${Math.ceil(
+            new Date(startDate).getDate() / 7
+          )}주차 주간 영어 문장`,
+        },
+      },
+      Source: process.env.SENDER_EMAIL,
+      ReplyToAddresses: [],
+    });
+
+    const response = await sesClient.send(emailCommand);
+    console.log("메일 전송 완료\n", response.$metadata);
+
+    return {
       statusCode: 200,
       body: JSON.stringify({
-        emailList: emailList,
-        emailResult: "Email sent successfully: " + emailResult.MessageId,
+        startDate,
+        endDate,
+        sentences,
+        emailTemplate,
       }),
     };
-    return response;
   } catch (error) {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: error.message,
+        error: String(error),
+        stack: error && error.stack,
+        details: error,
       }),
     };
   }
