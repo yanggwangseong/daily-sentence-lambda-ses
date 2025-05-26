@@ -11,5 +11,5 @@
 ### Email Template
 
 <p align="left">
-  <div align="left"><img src="https://i.postimg.cc/kMSbP8Rh/email-template.png" width="60%"/></div>
+  <div align="left"><img src="https://i.postimg.cc/ZRxz6VDM/email-template02.png" width="60%"/></div>
 </p>
